@@ -1,0 +1,5 @@
+[package]
+
+name = "cheap-sqlite-gui"
+version = "0.0.1"
+authors = ["rcj <robert.cole.jensen@gmail.com>"]
