@@ -1,5 +1,5 @@
 [package]
 
-name = "cheap-sqlite-gui"
+name = "csg"
 version = "0.0.1"
-authors = ["rcj <robert.cole.jensen@gmail.com>"]
+authors = ["rcj <rcj@ccs.neu.edu>", "howardc <howardc@ccs.neu.edu"]
