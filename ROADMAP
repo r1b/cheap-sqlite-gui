@@ -1,0 +1,14 @@
+v1 -> Monday, March 30th
++ Dump sqlite table names to ncurses window
++ Move cursor between table names
++ Trigger action when hitting enter & cursor over table name
+
+v2 -> Wednesday, April 1st
++ Dump contents of sqlite table when name is selected
++ Create new ncurses window with tabular display of contents
++ Move back and forth between main list window and table windows
+
+v3 -> Friday, April 3rd
++ Edit table rows when hitting enter & cursor over table cell
++ Generate SQL statements to apply changes
++ Prompt to apply changes OR manually apply with key command
