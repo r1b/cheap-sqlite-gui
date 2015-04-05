@@ -1,3 +1,5 @@
+/// Curses FFI wrapper
+
 extern crate libc;
 
 use sqlite::libc::c_char;

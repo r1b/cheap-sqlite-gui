@@ -12,3 +12,4 @@
 + http://invisible-island.net/ncurses/man/ncurses.3x.html
 + http://frank.harvard.edu/~coldwell/ncurses/ncurses-intro.html
 + http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/
++ https://www.sqlite.org/c3ref/intro.html
