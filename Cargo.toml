@@ -3,3 +3,7 @@
 name = "csg"
 version = "0.0.1"
 authors = ["rcj <rcj@ccs.neu.edu>", "howardc <howardc@ccs.neu.edu"]
+
+[dependencies]
+
+lazy_static = "0.1.*"

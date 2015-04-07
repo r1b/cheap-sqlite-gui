@@ -12,3 +12,5 @@ v3 -> Friday, April 3rd
 + Edit table rows when hitting enter & cursor over table cell
 + Generate SQL statements to apply changes
 + Prompt to apply changes OR manually apply with key command
+
+select name from sqlite_master where type = 'table';
