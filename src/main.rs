@@ -9,10 +9,8 @@ fn main() {
     let args = std::os::args();
     if args.len() < 2 {
         println!("usage: csg <file>");
-        -1
+        return;
     }
-    let filename : &str = args[1].as_slice();
-    let curses = Curses::new(filename);
-    curses.init();
+    let curses = Curses::new(args[1].as_slice());
     curses.run_forever();
 }

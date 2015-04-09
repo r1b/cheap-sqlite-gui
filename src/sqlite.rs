@@ -59,6 +59,7 @@ pub struct ExecResult {
     pub col_names : Vec<String>
 }
 
+#[derive(Clone)]
 pub struct Sqlite {
     db_handle : *const c_sqlite3
 }

@@ -20,22 +20,24 @@ static KEY_q : usize = 113;
 // Wrapper for opaque struct
 pub struct c_curses_window;
 
-pub struct Window<'a> {
+#[derive(Clone)]
+pub struct Window {
     window : *const c_curses_window,
-    sqlite : &'a Sqlite
+    sqlite : Sqlite
 }
 
-pub struct Screen<'a> {
-    sqlite : &'a Sqlite,
-    windows : Vec<Window<'a>>,
-    active_window : Option<&'a mut Window<'a>>
+#[derive(Clone)]
+pub struct Screen {
+    sqlite : Sqlite,
+    windows : Vec<Window>,
+    active_window : Option<Window>
 }
 
-pub struct Curses<'a> {
+pub struct Curses {
     width : usize,
     height : usize,
-    screens : Vec<Screen<'a>>,
-    active_screen : Option<&'a mut Screen<'a>>,
+    screens : Vec<Screen>,
+    active_screen : Option<Screen>,
     sqlite : Sqlite
 }
 
@@ -48,8 +50,8 @@ extern {
     // Display
     fn printw(_ : *const c_char) -> c_int;
     fn wprintw(win : *const c_curses_window, fmt : CString) -> c_int;
-    fn wattrset(win : *const c_curses_window, attrs : c_int) -> c_int;
-    fn wattroff(win : *const c_curses_window, attrs : c_int) -> c_int;
+    fn wstandout(win : *const c_curses_window) -> c_int;
+    fn wstandend(win : *const c_curses_window) -> c_int;
 
     // Character input
     fn cbreak();
@@ -67,11 +69,11 @@ extern {
     fn delwin(window : *const c_curses_window) -> c_int;
 
     // Attributes
-    static A_STANDOUT : c_int;
+    static WA_STANDOUT : c_int;
 }
 
-impl<'a> Window<'a> {
-    pub fn new(sqlite : &Sqlite,
+impl Window {
+    pub fn new(sqlite : Sqlite,
                nlines : usize, 
                ncols : usize, 
                begin_y : usize, 
@@ -105,23 +107,25 @@ impl<'a> Window<'a> {
     }
 
     pub fn select(&self) {
-        unsafe { wattrset(self.window, A_STANDOUT); };
+        unsafe { wstandout(self.window); };
+        self.refresh()
     }
 
     pub fn unselect(&self) {
-        unsafe { wattroff(self.window, A_STANDOUT); };
+        unsafe { wstandend(self.window); };
+        self.refresh()
     }
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for Window<'a> {
+impl Drop for Window {
     fn drop(&mut self) {
         unsafe { delwin(self.window); };
     }
 }
 
-impl<'a> Curses<'a> {
-    pub fn new(filename : &'static str) -> Curses {
+impl Curses {
+    pub fn new(filename : &str) -> Curses {
         unsafe { 
             initscr();
             cbreak();
@@ -146,13 +150,11 @@ impl<'a> Curses<'a> {
             sqlite : Sqlite::new(filename)
         };
 
-        curses
-    }
+        let main_screen = Screen::new_table_listing(curses.sqlite.clone());
+        curses.screens.push(main_screen);
+        curses.active_screen = Some(curses.screens[0].clone());
 
-    pub fn init(&'a mut self) {
-        let mut main_screen = Screen::new_table_listing(&self.sqlite);
-        self.screens.push(main_screen);
-        self.active_screen = Some(&mut self.screens[0]);
+        curses
     }
 
     // XXX: Move me somewhere else
@@ -165,7 +167,8 @@ impl<'a> Curses<'a> {
 
     pub fn run_forever(&self) {
         loop {
-            let active_window : &Window = self.get_active_window();
+            let ref active_window : Window = self.screens[0].windows[0];
+            active_window.select();
             let c = active_window.read();
 
             if c == KEY_q {
@@ -174,21 +177,21 @@ impl<'a> Curses<'a> {
         }
     }
 
-    fn get_active_window(&self) -> &Window {
-        self.active_screen.unwrap().active_window.unwrap()
-    }
+    // fn get_active_window(&self) -> Window {
+    //     self.active_screen.clone().unwrap().active_window.clone().unwrap()
+    // }
 
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for Curses<'a> {
+impl Drop for Curses {
     fn drop(&mut self) {
         unsafe { endwin(); };
     }
 }
 
-impl<'a> Screen<'a> {
-    fn new_table_listing(sqlite : &Sqlite) -> Screen {
+impl Screen {
+    fn new_table_listing(sqlite : Sqlite) -> Screen {
         let mut screen = Screen {
             windows : Vec::new(),
             active_window : None,
@@ -202,24 +205,20 @@ impl<'a> Screen<'a> {
 
         for result in (*results).iter() {
             for text in result.col_text.iter() {
-                let window = Window::new(screen.sqlite,
+                let window = Window::new(screen.sqlite.clone(),
                                          1,
                                          MAX_TABLE_NAME_LENGTH,
                                          y,
                                          0
                 );
                 window.write(text.as_slice());
-                window.select();
                 screen.windows.push(window);
                 y = y + 1;
             }
         }
-        screen.init();
-        screen
-    }
 
-    fn init(&'a mut self) {
-        self.active_window = Some(&mut self.windows[0]);
+        screen.active_window = Some(screen.windows[0].clone());
+        screen
     }
 
     // fn new_table_dump(sqlite : &Sqlite) -> Screen {
