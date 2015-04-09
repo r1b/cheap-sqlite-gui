@@ -1,25 +1,18 @@
 extern crate csg;
 extern crate libc;
 
-use csg::sqlite::{Sqlite, exec_results};
-use csg::cext;
-use csg::curses;
-use std::ptr;
-use libc::{c_char, c_int, c_void};
+#[allow(non_camel_case_types)]
+
+use csg::curses::{Curses};
 
 fn main() {
     let args = std::os::args();
     if args.len() < 2 {
-        panic!("usage: csg <file>");
+        println!("usage: csg <file>");
+        -1
     }
     let filename : &str = args[1].as_slice();
-    let sqlite = Sqlite::new(filename);
-    sqlite.list_tables();
-    //initscr();
-    let results = exec_results.lock().unwrap();
-    for result in (*results).iter() {
-        for text in result.col_text.iter() {
-            println!("{}", text);
-        }
-    }
+    let curses = Curses::new(filename);
+    curses.init();
+    curses.run_forever();
 }

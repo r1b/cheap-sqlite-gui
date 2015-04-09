@@ -1,3 +1,4 @@
+#![feature(unsafe_destructor)]
 #[macro_use]
 extern crate lazy_static;
 

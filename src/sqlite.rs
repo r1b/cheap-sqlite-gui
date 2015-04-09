@@ -13,19 +13,24 @@ lazy_static! {
     pub static ref exec_results: Mutex<Vec<ExecResult>> = Mutex::new(Vec::new());
 }
 
+pub static MAX_TABLE_NAME_LENGTH : usize = 128;
+
 /** Wrapper for opaque struct */
 pub struct c_sqlite3;
 
 #[link(name="sqlite3")]
 extern {
-    fn sqlite3_libversion() -> *const c_char;
     fn sqlite3_open(filename: *const c_char,        
                     db_handle: *const *const c_sqlite3) -> c_int;
     fn sqlite3_exec(db_handle: *const c_sqlite3, 
                     sql: *const c_char,
-                    cb: extern fn(*const c_void, c_int, *const *const c_char, *const *const c_char) -> c_int,
+                    cb: extern fn(*const c_void, 
+                                  c_int, 
+                                  *const *const c_char, 
+                                  *const *const c_char) -> c_int,
                     arg: *const c_void,
                     errmsg: *const *const c_char) -> c_int;
+    fn sqlite3_libversion() -> *const c_char;
 }
 
 extern fn list_tables_cb(db_handle : *const c_void, 
@@ -35,6 +40,7 @@ extern fn list_tables_cb(db_handle : *const c_void,
     let col_text = cext::cstrs_to_strs(col_text, num_cols as usize);
     let col_names = cext::cstrs_to_strs(col_names, num_cols as usize);
 
+    
     let result = ExecResult {
         num_cols : num_cols as usize,
         col_text : col_text,

@@ -8,6 +8,9 @@ use std::mem;
 use std::raw::Slice;
 use std::str;
 
+pub static TRUE : c_int = 1;
+pub static FALSE : c_int = 0;
+
 /** Converts a vector of owned rust strings to a vector of c strings */
 pub fn strs_to_cstrs(strs : Vec<&str>) -> Vec<CString> {
     let result : Vec<CString> = strs.into_iter().map(|x : &str| { 
