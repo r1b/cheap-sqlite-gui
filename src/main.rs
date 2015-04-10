@@ -11,6 +11,6 @@ fn main() {
         println!("usage: csg <file>");
         return;
     }
-    let curses = Curses::new(args[1].as_slice());
+    let mut curses = Curses::new(args[1].as_slice());
     curses.run_forever();
 }

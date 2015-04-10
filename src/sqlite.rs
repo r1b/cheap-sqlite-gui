@@ -16,6 +16,7 @@ lazy_static! {
 pub static MAX_TABLE_NAME_LENGTH : usize = 128;
 
 /** Wrapper for opaque struct */
+#[repr(C)]
 pub struct c_sqlite3;
 
 #[link(name="sqlite3")]

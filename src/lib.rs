@@ -1,4 +1,8 @@
-#![feature(unsafe_destructor)]
+#![allow(unstable)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(non_camel_case_types)]
+#![allow(missing_copy_implementations)]
 #[macro_use]
 extern crate lazy_static;
 
