@@ -9,6 +9,9 @@ use std::sync::{Mutex};
 use cext;
 
 static LIST_TABLES_QUERY : &'static str = "select name from sqlite_master where type = 'table';";
+// XXX: Apparently format strings have to be literals?
+// static DUMP_TABLE_QUERY : &'static str = "select * from {}";
+
 lazy_static! {
     pub static ref exec_results: Mutex<Vec<ExecResult>> = Mutex::new(Vec::new());
 }
@@ -34,7 +37,8 @@ extern {
     fn sqlite3_libversion() -> *const c_char;
 }
 
-extern fn list_tables_cb(db_handle : *const c_void, 
+/// Callback method used for exec
+extern fn exec_cb(db_handle : *const c_void, 
                          num_cols : c_int, 
                          col_text : *const *const c_char, 
                          col_names : *const *const c_char) -> c_int {
@@ -54,24 +58,31 @@ extern fn list_tables_cb(db_handle : *const c_void,
     0 as c_int
 }
 
+/// Represents the result of a call to SQLite library
 pub struct ExecResult {
+    /// Number of columns
     pub num_cols : usize,
+    /// Text in the columns
     pub col_text : Vec<String>,
+    /// Names of the columns
     pub col_names : Vec<String>
 }
 
 #[derive(Clone)]
 pub struct Sqlite {
+    /// A pointer to SQLite databse
     db_handle : *const c_sqlite3
 }
 
 impl Sqlite {  
+    /// Constructor
     pub fn new(filename : &str) -> Sqlite {
         let db_handle = ptr::null();
         let res = Sqlite::open(filename, &db_handle).ok();
         Sqlite { db_handle: db_handle }
     }
 
+    /// Open a new database
     pub fn open(filename : &str, db_handle : & *const c_sqlite3) -> Result<(), String> {
         let filename = CString::from_slice(filename.as_bytes());
         let ret = unsafe { sqlite3_open(filename.as_ptr(), db_handle as *const *const c_sqlite3) };
@@ -81,6 +92,7 @@ impl Sqlite {
         }
     }
 
+    /// Get the current version
     pub fn version() -> String {
         let raw_version : *const i8 = unsafe { sqlite3_libversion() };
         let buf = unsafe { c_str_to_bytes(mem::transmute(&raw_version)) };
@@ -88,6 +100,7 @@ impl Sqlite {
         String::from_utf8(buf.to_vec()).unwrap()
     }
 
+    /// Execute a command from the SQLite code
     pub fn exec(&self,
                 sql: &str,
                 cb: extern fn(*const c_void, c_int, *const *const c_char, *const *const c_char) -> c_int,
@@ -103,7 +116,13 @@ impl Sqlite {
         } 
     }
 
+    /// Calls SQLite to list all tables
     pub fn list_tables(&self) {
-        self.exec(LIST_TABLES_QUERY, list_tables_cb);
+        self.exec(LIST_TABLES_QUERY, exec_cb);
+    }
+
+    /// Dumps all table entries
+    pub fn dump_table(&self, table : String) {
+        self.exec(format!("select * from {};", table).as_slice(), exec_cb);
     }
 }

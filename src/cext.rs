@@ -8,6 +8,7 @@ use std::mem;
 use std::raw::Slice;
 use std::str;
 
+/// C Constants
 pub static TRUE : c_int = 1;
 pub static FALSE : c_int = 0;
 

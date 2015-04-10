@@ -1,7 +1,6 @@
+#![allow(unstable)]
 extern crate csg;
 extern crate libc;
-
-#[allow(non_camel_case_types)]
 
 use csg::curses::{Curses};
 
