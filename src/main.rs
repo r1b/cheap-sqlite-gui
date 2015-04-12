@@ -2,7 +2,7 @@
 extern crate csg;
 extern crate libc;
 
-use csg::curses::{Curses};
+use csg::csgui::{CSG};
 
 fn main() {
     let args = std::os::args();
@@ -10,6 +10,6 @@ fn main() {
         println!("usage: csg <file>");
         return;
     }
-    let mut curses = Curses::new(args[1].as_slice());
-    curses.run_forever();
+    let mut csgui = CSG::new(args[1].as_slice());
+    csgui.run_forever();
 }

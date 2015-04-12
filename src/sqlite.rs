@@ -2,16 +2,17 @@
 extern crate libc;
 
 use sqlite::libc::{c_char, c_int, c_void};
-use std::ffi::{CString, c_str_to_bytes};
-use std::mem;
 use std::ptr;
 use std::sync::{Mutex};
-use cext;
+use cext::{cstrs_to_strs, str_to_cstr};
 
 static LIST_TABLES_QUERY : &'static str = "select name from sqlite_master where type = 'table';";
 // XXX: Apparently format strings have to be literals?
 // static DUMP_TABLE_QUERY : &'static str = "select * from {}";
 
+// Lazy initialization of global execution state, thx Jesse
+// It's thread-safe too, which doesn't matter in the current
+// iteration of this software but may matter later
 lazy_static! {
     pub static ref exec_results: Mutex<Vec<ExecResult>> = Mutex::new(Vec::new());
 }
@@ -42,8 +43,8 @@ extern fn exec_cb(db_handle : *const c_void,
                          num_cols : c_int, 
                          col_text : *const *const c_char, 
                          col_names : *const *const c_char) -> c_int {
-    let col_text = cext::cstrs_to_strs(col_text, num_cols as usize);
-    let col_names = cext::cstrs_to_strs(col_names, num_cols as usize);
+    let col_text = cstrs_to_strs(col_text, num_cols as usize);
+    let col_names = cstrs_to_strs(col_names, num_cols as usize);
 
     
     let result = ExecResult {
@@ -84,7 +85,7 @@ impl Sqlite {
 
     /// Open a new database
     pub fn open(filename : &str, db_handle : & *const c_sqlite3) -> Result<(), String> {
-        let filename = CString::from_slice(filename.as_bytes());
+        let filename = str_to_cstr(filename);
         let ret = unsafe { sqlite3_open(filename.as_ptr(), db_handle as *const *const c_sqlite3) };
         match ret {
             0 => { Ok(()) }
@@ -92,20 +93,12 @@ impl Sqlite {
         }
     }
 
-    /// Get the current version
-    pub fn version() -> String {
-        let raw_version : *const i8 = unsafe { sqlite3_libversion() };
-        let buf = unsafe { c_str_to_bytes(mem::transmute(&raw_version)) };
-
-        String::from_utf8(buf.to_vec()).unwrap()
-    }
-
     /// Execute a command from the SQLite code
     pub fn exec(&self,
                 sql: &str,
                 cb: extern fn(*const c_void, c_int, *const *const c_char, *const *const c_char) -> c_int,
                 ) -> i32 {
-        let sql = CString::from_slice(sql.as_bytes());
+        let sql = str_to_cstr(sql);
         exec_results.lock().unwrap().clear();
         unsafe { 
             sqlite3_exec(self.db_handle, 
