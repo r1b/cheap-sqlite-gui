@@ -1,7 +1,5 @@
 #![allow(unstable)]
 #![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 #![allow(non_camel_case_types)]
 #![allow(missing_copy_implementations)]
 #![allow(non_upper_case_globals)]

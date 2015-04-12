@@ -2,7 +2,7 @@
 
 extern crate libc;
 
-use cext::libc::{c_char, c_int, c_void};
+use cext::libc::{c_char, c_int};
 use std::ffi::{CString, c_str_to_bytes};
 use std::mem;
 use std::raw::Slice;

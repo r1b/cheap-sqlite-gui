@@ -3,7 +3,7 @@
 extern crate libc;
 
 use curses::libc::{c_char, c_int};
-use cext::{TRUE, FALSE, str_to_cstr};
+use cext::{TRUE, str_to_cstr};
 
 const CURSOR_INVISIBLE : c_int = 0;
 
@@ -24,17 +24,11 @@ pub struct Curses;
 extern {
     // Initialization & teardown
     fn initscr() -> *const c_curses_window;
-    fn start_color() -> c_int;
     fn curs_set(visibility : c_int) -> c_int;
     fn endwin() -> c_int;
 
     // Display
-    fn printw(_ : *const c_char) -> c_int;
     fn wprintw(win : *const c_curses_window, fmt : *const c_char) -> c_int;
-    fn wattron(win : *const c_curses_window, attrs : c_int) -> c_int;
-    fn wattroff(win : *const c_curses_window, attrs : c_int) -> c_int;
-    fn wstandout(win : *const c_curses_window) -> c_int;
-    fn wstandend(win : *const c_curses_window) -> c_int;
     fn wclear(win : *const c_curses_window) -> c_int;
 
     // Character input

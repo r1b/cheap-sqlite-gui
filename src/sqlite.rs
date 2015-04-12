@@ -35,21 +35,20 @@ extern {
                                   *const *const c_char) -> c_int,
                     arg: *const c_void,
                     errmsg: *const *const c_char) -> c_int;
-    fn sqlite3_libversion() -> *const c_char;
 }
 
 /// Callback method used for exec
-extern fn exec_cb(db_handle : *const c_void, 
-                         num_cols : c_int, 
-                         col_text : *const *const c_char, 
-                         col_names : *const *const c_char) -> c_int {
+extern fn exec_cb(_ : *const c_void, 
+                  num_cols : c_int, 
+                  col_text : *const *const c_char, 
+                  col_names : *const *const c_char) -> c_int {
     let num_cols = num_cols as usize;
     let col_text = cstrs_to_strs(col_text, num_cols);
     let col_names = cstrs_to_strs(col_names, num_cols);
     let mut results = exec_results.lock().unwrap();
 
     let need_num_cols = match results.num_cols {
-        Some(n) => false,
+        Some(_) => false,
         None => true
     };
     if need_num_cols {
@@ -57,7 +56,7 @@ extern fn exec_cb(db_handle : *const c_void,
     }
 
     let need_col_names = match results.col_names {
-        Some(ref names) => false,
+        Some(_) => false,
         None => true
     };
     if need_col_names {
@@ -88,12 +87,14 @@ impl ExecResult {
         }
     }
 
+    /// Clears an execution result
     pub fn reset(&mut self) {
         self.num_cols = None;
         self.col_text = Vec::new();
         self.col_names = None;
     }
 
+    /// Return an immutable reference to column names
     pub fn get_col_names(&self) -> Option<&Vec<String>> {
         self.col_names.as_ref()
     }
@@ -109,7 +110,7 @@ impl Sqlite {
     /// Constructor
     pub fn new(filename : &str) -> Sqlite {
         let db_handle = ptr::null();
-        let res = Sqlite::open(filename, &db_handle).ok();
+        Sqlite::open(filename, &db_handle).ok();
         Sqlite { db_handle: db_handle }
     }
 

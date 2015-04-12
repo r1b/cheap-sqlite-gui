@@ -1,5 +1,5 @@
 use osext::{get_env_as};
-use sqlite::{Sqlite, MAX_TABLE_NAME_LENGTH, exec_results};
+use sqlite::{Sqlite, exec_results};
 use curses::{Window, Curses};
 
 // Keys
