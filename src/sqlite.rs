@@ -14,7 +14,7 @@ static LIST_TABLES_QUERY : &'static str = "select name from sqlite_master where 
 // It's thread-safe too, which doesn't matter in the current
 // iteration of this software but may matter later
 lazy_static! {
-    pub static ref exec_results: Mutex<Vec<ExecResult>> = Mutex::new(Vec::new());
+    pub static ref exec_results: Mutex<ExecResult> = Mutex::new(ExecResult::new());
 }
 
 pub static MAX_TABLE_NAME_LENGTH : usize = 128;
@@ -43,18 +43,28 @@ extern fn exec_cb(db_handle : *const c_void,
                          num_cols : c_int, 
                          col_text : *const *const c_char, 
                          col_names : *const *const c_char) -> c_int {
-    let col_text = cstrs_to_strs(col_text, num_cols as usize);
-    let col_names = cstrs_to_strs(col_names, num_cols as usize);
-
-    
-    let result = ExecResult {
-        num_cols : num_cols as usize,
-        col_text : col_text,
-        col_names : col_names
-    };
-
+    let num_cols = num_cols as usize;
+    let col_text = cstrs_to_strs(col_text, num_cols);
+    let col_names = cstrs_to_strs(col_names, num_cols);
     let mut results = exec_results.lock().unwrap();
-    results.push(result);
+
+    let need_num_cols = match results.num_cols {
+        Some(n) => false,
+        None => true
+    };
+    if need_num_cols {
+        results.num_cols = Some(num_cols);
+    }
+
+    let need_col_names = match results.col_names {
+        Some(ref names) => false,
+        None => true
+    };
+    if need_col_names {
+        results.col_names = Some(col_names);
+    }
+
+    results.col_text.push(col_text);
 
     0 as c_int
 }
@@ -62,11 +72,31 @@ extern fn exec_cb(db_handle : *const c_void,
 /// Represents the result of a call to SQLite library
 pub struct ExecResult {
     /// Number of columns
-    pub num_cols : usize,
+    pub num_cols : Option<usize>,
     /// Text in the columns
-    pub col_text : Vec<String>,
+    pub col_text : Vec<Vec<String>>,
     /// Names of the columns
-    pub col_names : Vec<String>
+    pub col_names : Option<Vec<String>>
+}
+
+impl ExecResult {
+    pub fn new() -> ExecResult {
+        ExecResult {
+            num_cols : None,
+            col_text : Vec::new(),
+            col_names : None
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.num_cols = None;
+        self.col_text = Vec::new();
+        self.col_names = None;
+    }
+
+    pub fn get_col_names(&self) -> Option<&Vec<String>> {
+        self.col_names.as_ref()
+    }
 }
 
 #[derive(Clone)]
@@ -99,7 +129,7 @@ impl Sqlite {
                 cb: extern fn(*const c_void, c_int, *const *const c_char, *const *const c_char) -> c_int,
                 ) -> i32 {
         let sql = str_to_cstr(sql);
-        exec_results.lock().unwrap().clear();
+        exec_results.lock().unwrap().reset();
         unsafe { 
             sqlite3_exec(self.db_handle, 
                          sql.as_ptr(), 

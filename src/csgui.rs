@@ -103,21 +103,18 @@ impl CSGScreen {
         let mut y : usize = 0;
 
         // Column names
-        for result in (*results).iter() {
-            for name in result.col_names.iter() {
-                let mut window = CSGWindow::new(sqlite.clone(), false, 1, CELL_WIDTH, y, x * CELL_WIDTH);
-                window.set_text(name.clone());
-                windows[x][y] = Some(window);
-                x = x + 1;
-            }
-            x = 0;
-            y = y + 1;
-            break;
+        for name in results.get_col_names().unwrap().iter() {
+            let mut window = CSGWindow::new(sqlite.clone(), false, 1, CELL_WIDTH, y, x * CELL_WIDTH);
+            window.set_text(name.clone());
+            windows[x][y] = Some(window);
+            x = x + 1;
         }
+        x = 0;
+        y = y + 1;
 
         // Rows
-        for result in (*results).iter() {
-            for text in result.col_text.iter() {
+        for row in results.col_text.iter() {
+            for text in row.iter() {
                 let mut window = CSGWindow::new(sqlite.clone(), true, 1, CELL_WIDTH, y, x * CELL_WIDTH);
                 window.set_text(text.clone());
                 if x == 0  && y == 1 {
@@ -150,8 +147,8 @@ impl CSGScreen {
         let mut windows : Vec<Vec<Option<CSGWindow>>> = CSGScreen::init_windows(rows, cols);
         let mut y : usize = 0;
 
-        for result in (*results).iter() {
-            for text in result.col_text.iter() {
+        for row in results.col_text.iter() {
+            for text in row.iter() {
                 let mut window = CSGWindow::new(sqlite.clone(), true, 1, CELL_WIDTH, y, 0);
                 window.set_text(text.clone());
                 if y == 0 {
