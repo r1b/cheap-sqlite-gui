@@ -276,46 +276,83 @@ impl CSG {
     /// Main loop, handles keystrokes & dispatches events
     pub fn run_forever(&mut self) {
         loop {
-            let prev = self.get_active_window_coords();
-            let (mut x, mut y) = prev;
             let c = self.read_current_window();
-
-            match c {
-                KEY_q => { 
-                    self.screens[self.active_screen].clear_all();
-                    self.screens.pop();
-                    if self.screens.len() == 0 {
-                        break;
-                    }
-                    self.active_screen = self.active_screen - 1;
-                    self.screens[self.active_screen].write_all();
-                },
-                KEY_h => {
-                    x = x - 1;
-                    self.set_active_window(prev, (x, y));
-                },
-                KEY_j => {
-                    y = y + 1;
-                    self.set_active_window(prev, (x, y));
-                },
-                KEY_k => {
-                    y = y - 1;
-                    self.set_active_window(prev, (x, y));
-                },
-                KEY_l => {
-                    x = x + 1;
-                    self.set_active_window(prev, (x, y));
-                },
-                KEY_e => {
-                    self.handle_edit();
-                },
-                _ => { continue; }
+            match self.dispatch_key(c) {
+            	Some(_) => { continue; },
+            	None => { break; }
             }
         }
     }
 
+    pub fn dispatch_key(&mut self, c : usize) -> Option<()> {
+        match c {
+            KEY_q => { 
+            	self.handle_quit()
+            },
+            KEY_h => {
+            	self.handle_left()
+            },
+            KEY_j => {
+                self.handle_down()
+            },
+            KEY_k => {
+                self.handle_up()
+            },
+            KEY_l => {
+                self.handle_right()
+            },
+            KEY_e => {
+                self.handle_edit()
+            },
+            _ => { Some(()) }
+        }
+    }
+
+    pub fn handle_left(&mut self) -> Option<()> {
+    	let prev = self.get_active_window_coords();
+        let (mut x, y) = prev;
+        x = x - 1;
+        self.set_active_window(prev, (x, y));
+        Some(())
+    }
+
+    pub fn handle_down(&mut self) -> Option<()> {
+    	let prev = self.get_active_window_coords();
+        let (x, mut y) = prev;
+        y = y + 1;
+        self.set_active_window(prev, (x, y));
+        Some(())
+    }
+
+    pub fn handle_up(&mut self) -> Option<()> {
+    	let prev = self.get_active_window_coords();
+        let (x, mut y) = prev;
+        y = y - 1;
+        self.set_active_window(prev, (x, y));
+        Some(())
+    }
+
+    pub fn handle_right(&mut self) -> Option<()> {
+    	let prev = self.get_active_window_coords();
+        let (mut x, y) = prev;
+        x = x + 1;
+        self.set_active_window(prev, (x, y));
+        Some(())
+    }
+
+    pub fn handle_quit(&mut self) -> Option<()> {
+        self.screens[self.active_screen].clear_all();
+        self.screens.pop();
+        if self.screens.len() == 0 {
+            return None;
+        }
+        self.active_screen = self.active_screen - 1;
+        self.screens[self.active_screen].write_all();
+        Some(())
+    }
+
     // Dispatches an edit depending on the kind of screen we are on
-    fn handle_edit(&mut self) {
+    fn handle_edit(&mut self) -> Option<()> {
         match self.screens[self.active_screen].kind {
             ScreenKind::TableList => {
                 self.screens[self.active_screen].clear_all();
@@ -329,9 +366,10 @@ impl CSG {
             },
             ScreenKind::TableDump => {
                 // Edit cells here
-                return;
+                return Some(());
             }
         }
+        Some(())
     }
 
     // Adds a new screen and sets it as active

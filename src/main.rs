@@ -4,6 +4,7 @@ extern crate libc;
 
 use csg::csgui::{CSG};
 
+/// Entry point
 fn main() {
     let args = std::os::args();
     if args.len() < 2 {
