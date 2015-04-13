@@ -3,12 +3,12 @@ use sqlite::{Sqlite, exec_results};
 use curses::{Window, Curses};
 
 // Keys
-const KEY_q : usize = 113;
-const KEY_h : usize = 104;
-const KEY_j : usize = 106;
-const KEY_k : usize = 107;
-const KEY_l : usize = 108;
-const KEY_e : usize = 101;
+pub const KEY_q : usize = 113;
+pub const KEY_h : usize = 104;
+pub const KEY_j : usize = 106;
+pub const KEY_k : usize = 107;
+pub const KEY_l : usize = 108;
+pub const KEY_e : usize = 101;
 
 // Dimensions
 pub static DEFAULT_WIDTH : usize = 80;
@@ -239,8 +239,8 @@ pub struct CSG {
     curses : Curses,
     width : usize,
     height : usize,
-    screens : Vec<CSGScreen>,
-    active_screen : usize
+    pub screens : Vec<CSGScreen>,
+    pub active_screen : usize
 }
 
 impl CSG {
@@ -370,29 +370,29 @@ impl CSG {
     }
 
     // Adds a new screen and sets it as active
-    fn add_screen(&mut self, s : CSGScreen) {
+    pub fn add_screen(&mut self, s : CSGScreen) {
         self.screens.push(s);
         self.active_screen = self.active_screen + 1;
     }
 
     /// Get method for coordinates of the active window
-    fn get_active_window_coords(&self) -> (i64, i64) {
+    pub fn get_active_window_coords(&self) -> (i64, i64) {
         let coords = self.screens[self.active_screen].active_window;
         (coords.0 as i64, coords.1 as i64)
     }
 
     /// Get method for a pointer to the active window
-    fn get_active_window(&self) -> Option<&CSGWindow> {
+    pub fn get_active_window(&self) -> Option<&CSGWindow> {
         self.screens[self.active_screen].get_active_window()
     }
 
     /// Set method for the active window
-    fn set_active_window(&mut self, prev : (i64, i64), next : (i64, i64)) {
+    pub fn set_active_window(&mut self, prev : (i64, i64), next : (i64, i64)) {
         self.screens[self.active_screen].set_active_window(prev, next)
     }
 
     // Read characters within the context of the current window
-    fn read_current_window(&self) -> usize {
+    pub fn read_current_window(&self) -> usize {
         let current_window : &CSGWindow = self.get_active_window().unwrap();
         current_window.window.read_in()
     }

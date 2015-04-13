@@ -1,4 +1,5 @@
 #![allow(unstable)]
+#![allow(dead_code)]
 extern crate csg;
 extern crate libc;
 

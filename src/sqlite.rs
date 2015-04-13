@@ -17,6 +17,8 @@ lazy_static! {
     pub static ref exec_results: Mutex<ExecResult> = Mutex::new(ExecResult::new());
 }
 
+// XXX: This is unused, but may need to be enforced
+// later for proper table formatting
 pub static MAX_TABLE_NAME_LENGTH : usize = 128;
 
 /** Wrapper for opaque struct */
@@ -127,8 +129,10 @@ impl Sqlite {
     /// Execute a command from the SQLite code
     pub fn exec(&self,
                 sql: &str,
-                cb: extern fn(*const c_void, c_int, *const *const c_char, *const *const c_char) -> c_int,
-                ) -> i32 {
+                cb: extern fn(*const c_void, 
+                              c_int, 
+                              *const *const c_char, 
+                              *const *const c_char) -> c_int) -> i32 {
         let sql = str_to_cstr(sql);
         exec_results.lock().unwrap().reset();
         unsafe { 

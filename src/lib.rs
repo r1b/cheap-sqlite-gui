@@ -12,3 +12,5 @@ pub mod sqlite;
 pub mod curses;
 pub mod cext;
 pub mod osext;
+#[cfg(test)]
+mod test;
