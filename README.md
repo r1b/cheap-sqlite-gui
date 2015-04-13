@@ -17,16 +17,18 @@
 
 ## Usage
 
-+ q 	-> Quit/previous screen
++ q 	  -> Quit/previous screen
 + hjkl 	-> Movement
-+ e 	-> Edit entry
++ e 	  -> Edit entry
 
 ## Organization
 
-+ src/cext.rs		-> Utility functions for converting repr from C <-> Rust
-+ src/curses.rs 	-> GUI routines & Curses FFI
-+ src/lib.rs 		-> Module structure
++ src/cext.rs		  -> Utility functions for converting repr from C <-> Rust
++ src/csgui.rs    -> GUI logic
++ src/curses.rs 	-> Curses FFI
++ src/lib.rs 		  -> Module structure
 + src/main.rs 		-> Entry point
++ src/osext.rs		-> Utility functions for dealing with the environment
 + src/sqlite.rs 	-> Sqlite FFI
 
 ## TODO
@@ -34,5 +36,4 @@
 + Stability (e.g limit entry width)
 + Scroll on rows/columns that exceed screen height/width
 + Cell editing
-+ Pull out Screen struct from curses.rs & add wrapper struct (separate view from controller)
 + Better "highlighting" of selected cell
