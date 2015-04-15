@@ -158,6 +158,6 @@ impl Sqlite {
 
     /// Dumps all table entries
     pub fn dump_table(&self, table : String) -> Result<(), String> {
-        self.exec(format!("select * from {};", table).as_slice(), exec_cb)
+        self.exec(format!("select rowid,* from {};", table).as_slice(), exec_cb)
     }
 }
