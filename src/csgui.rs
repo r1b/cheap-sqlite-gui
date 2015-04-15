@@ -94,8 +94,11 @@ impl CSGScreen {
     }
 
     // Factory constructor for table dump screens
-    fn new_table_dump(sqlite : Sqlite, width : usize, height : usize, table : String) -> CSGScreen {
-        sqlite.dump_table(table);
+    fn new_table_dump(sqlite : Sqlite, width : usize, height : usize, table : String) -> Result<CSGScreen, String> {
+        match sqlite.dump_table(table) {
+            Ok(_) => { },
+            Err(msg) => { return Err(msg) }
+        };
 
         let results = exec_results.lock().unwrap();
         let mut windows : Vec<Vec<Option<CSGWindow>>> = CSGScreen::init_windows(height, width);
@@ -127,19 +130,22 @@ impl CSGScreen {
             y = y + 1;
         }
 
-        CSGScreen {
+        Ok(CSGScreen {
             sqlite : sqlite,
             rows : height,
             cols : width,
             windows : windows,
             active_window : (0, 1),
             kind : ScreenKind::TableDump
-        }
+        })
     }
 
     // Factory constructor for table list screens
-    fn new_table_list(sqlite : Sqlite, width : usize, height : usize) -> CSGScreen {
-        sqlite.list_tables();
+    fn new_table_list(sqlite : Sqlite, width : usize, height : usize) -> Result<CSGScreen, String> {
+        match sqlite.list_tables() {
+            Ok(_) => { },
+            Err(msg) => { return Err(msg); }
+        };
 
         let results = exec_results.lock().unwrap();
         let rows = height;
@@ -159,14 +165,14 @@ impl CSGScreen {
             }
         }
 
-        CSGScreen {
+        Ok(CSGScreen {
             sqlite : sqlite,
             rows : rows,
             cols : cols,
             windows : windows,
             active_window : (0, 0),
             kind : ScreenKind::TableList
-        }
+        })
     }
 
     /// Get method for active window
@@ -244,7 +250,7 @@ pub struct CSG {
 }
 
 impl CSG {
-	pub fn new(filename : &str) -> CSG {
+	pub fn new(filename : &str) -> Result<CSG, String> {
         let sqlite = Sqlite::new(filename);
         let curses = Curses::new();
         let width = match get_env_as::<usize>("COLUMNS") {
@@ -256,88 +262,97 @@ impl CSG {
             None => DEFAULT_HEIGHT
         };
         let mut screens : Vec<CSGScreen> = Vec::new();
-        let main_screen = CSGScreen::new_table_list(sqlite.clone(), width, height);
-        screens.push(main_screen);
+        match CSGScreen::new_table_list(sqlite.clone(), width, height) {
+            Ok(main_screen) => {
+                screens.push(main_screen);
 
-        CSG {
-            sqlite : sqlite,
-            curses : curses,
-            width : width,
-            height : height,
-            screens : screens,
-            active_screen : 0,
-        }
+                return Ok(CSG {
+                    sqlite : sqlite,
+                    curses : curses,
+                    width : width,
+                    height : height,
+                    screens : screens,
+                    active_screen : 0,
+                });
+            },
+            Err(msg) => { return Err(msg) }
+        };
 	}
 
 
     /// Main loop, handles keystrokes & dispatches events
-    pub fn run_forever(&mut self) {
+    pub fn run_forever(&mut self) -> Result<(), String> {
         loop {
             let c = self.read_current_window();
             match self.dispatch_key(c) {
-            	Some(_) => { continue; },
-            	None => { break; }
+            	Some(r) => { 
+                    match r {
+                        Ok(_) => { },
+                        Err(msg) => { return Err(msg); }
+                    }
+                },
+            	None => { return Ok(()); }
             }
         }
     }
 
-    pub fn dispatch_key(&mut self, c : usize) -> Option<()> {
+    pub fn dispatch_key(&mut self, c : usize) -> Option<Result<(), String>> {
         match c {
             KEY_q => { 
-            	self.handle_quit()
+            	return self.handle_quit();
             },
             KEY_h => {
-            	self.handle_left()
+            	return self.handle_left();
             },
             KEY_j => {
-                self.handle_down()
+                return self.handle_down();
             },
             KEY_k => {
-                self.handle_up()
+                return self.handle_up();
             },
             KEY_l => {
-                self.handle_right()
+                return self.handle_right();
             },
             KEY_e => {
-                self.handle_edit()
+                return self.handle_edit();
             },
-            _ => { Some(()) }
+            _ => { return Some(Ok(())); }
         }
     }
 
-    pub fn handle_left(&mut self) -> Option<()> {
+    pub fn handle_left(&mut self) -> Option<Result<(), String>> {
     	let prev = self.get_active_window_coords();
         let (mut x, y) = prev;
         x = x - 1;
         self.set_active_window(prev, (x, y));
-        Some(())
+        Some(Ok(()))
     }
 
-    pub fn handle_down(&mut self) -> Option<()> {
+    pub fn handle_down(&mut self) -> Option<Result<(), String>> {
     	let prev = self.get_active_window_coords();
         let (x, mut y) = prev;
         y = y + 1;
         self.set_active_window(prev, (x, y));
-        Some(())
+        Some(Ok(()))
     }
 
-    pub fn handle_up(&mut self) -> Option<()> {
+    pub fn handle_up(&mut self) -> Option<Result<(), String>> {
     	let prev = self.get_active_window_coords();
         let (x, mut y) = prev;
         y = y - 1;
         self.set_active_window(prev, (x, y));
-        Some(())
+        Some(Ok(()))
     }
 
-    pub fn handle_right(&mut self) -> Option<()> {
+    pub fn handle_right(&mut self) -> Option<Result<(), String>> {
     	let prev = self.get_active_window_coords();
         let (mut x, y) = prev;
         x = x + 1;
         self.set_active_window(prev, (x, y));
-        Some(())
+        Some(Ok(()))
     }
 
-    pub fn handle_quit(&mut self) -> Option<()> {
+    pub fn handle_quit(&mut self) -> Option<Result<(), String>> {
         self.screens[self.active_screen].clear_all();
         self.screens.pop();
         if self.screens.len() == 0 {
@@ -345,28 +360,32 @@ impl CSG {
         }
         self.active_screen = self.active_screen - 1;
         self.screens[self.active_screen].write_all();
-        Some(())
+        Some(Ok(()))
     }
 
     // Dispatches an edit depending on the kind of screen we are on
-    fn handle_edit(&mut self) -> Option<()> {
+    fn handle_edit(&mut self) -> Option<Result<(), String>> {
         match self.screens[self.active_screen].kind {
             ScreenKind::TableList => {
                 self.screens[self.active_screen].clear_all();
 
                 let active_window_text = self.get_active_window().unwrap().text.clone();
-                let table_dump_screen = CSGScreen::new_table_dump(self.sqlite.clone(),
-                                                                  self.width,
-                                                                  self.height,
-                                                                  active_window_text);
-                self.add_screen(table_dump_screen);
+                match CSGScreen::new_table_dump(self.sqlite.clone(),
+                                                self.width,
+                                                self.height,
+                                                active_window_text) {
+                    Ok(table_dump_screen) => {
+                        self.add_screen(table_dump_screen);
+                        return Some(Ok(()));
+                    },
+                    Err(msg) => { return Some(Err(msg)) }
+                }
             },
             ScreenKind::TableDump => {
                 // Edit cells here
-                return Some(());
+                return Some(Ok(()));
             }
         }
-        Some(())
     }
 
     // Adds a new screen and sets it as active

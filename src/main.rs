@@ -12,6 +12,23 @@ fn main() {
         println!("usage: csg <file>");
         return;
     }
-    let mut csgui = CSG::new(args[1].as_slice());
-    csgui.run_forever();
+    let result : Result<(), String> = {
+	    let mut csgui = match CSG::new(args[1].as_slice()) {
+	    	Ok(csgui) => { csgui },
+	    	Err(msg) => { 
+	    		println!("{}", msg);
+	    		return;
+	    	}
+	    };
+
+    	csgui.run_forever()
+    };
+
+    match result {
+    	Ok(_) => { },
+    	Err(msg) => { 
+    		println!("{}", msg);
+    		return;
+    	}
+    }
 }

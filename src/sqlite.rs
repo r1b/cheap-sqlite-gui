@@ -4,7 +4,7 @@ extern crate libc;
 use sqlite::libc::{c_char, c_int, c_void};
 use std::ptr;
 use std::sync::{Mutex};
-use cext::{cstrs_to_strs, str_to_cstr};
+use cext::{cstrs_to_strs, str_to_cstr, cstr_to_str};
 
 static LIST_TABLES_QUERY : &'static str = "select name from sqlite_master where type = 'table';";
 // XXX: Apparently format strings have to be literals?
@@ -36,7 +36,7 @@ extern {
                                   *const *const c_char, 
                                   *const *const c_char) -> c_int,
                     arg: *const c_void,
-                    errmsg: *const *const c_char) -> c_int;
+                    errmsg: *mut *const c_char) -> c_int;
 }
 
 /// Callback method used for exec
@@ -132,25 +132,32 @@ impl Sqlite {
                 cb: extern fn(*const c_void, 
                               c_int, 
                               *const *const c_char, 
-                              *const *const c_char) -> c_int) -> i32 {
+                              *const *const c_char) -> c_int) -> Result<(), String> {
         let sql = str_to_cstr(sql);
+        let mut errmsg = ptr::null();
         exec_results.lock().unwrap().reset();
-        unsafe { 
+        let _ = unsafe { 
             sqlite3_exec(self.db_handle, 
                          sql.as_ptr(), 
                          cb,
-                         self.db_handle as *const c_void,
-                         ptr::null()) // Ignoring errmsg! Otherwise we have to free it
-        } 
+                         ptr::null(),
+                         &mut errmsg as *mut *const c_char)
+        };
+
+        if !errmsg.is_null() {
+            let errmsg = cstr_to_str(errmsg);
+            return Err(errmsg);
+        }
+        Ok(())
     }
 
     /// Calls SQLite to list all tables
-    pub fn list_tables(&self) {
-        self.exec(LIST_TABLES_QUERY, exec_cb);
+    pub fn list_tables(&self) -> Result<(), String> {
+        self.exec(LIST_TABLES_QUERY, exec_cb)
     }
 
     /// Dumps all table entries
-    pub fn dump_table(&self, table : String) {
-        self.exec(format!("select * from {};", table).as_slice(), exec_cb);
+    pub fn dump_table(&self, table : String) -> Result<(), String> {
+        self.exec(format!("select * from {};", table).as_slice(), exec_cb)
     }
 }
